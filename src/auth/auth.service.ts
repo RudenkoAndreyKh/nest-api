@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import User from '../models/user.model';
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+var jwtDecode = require('jwt-decode');
 
 const SALT_ROUNDS: number = 10;
 const SECRET_KEY: string = "A16R03I1999"
@@ -14,8 +15,9 @@ export class AuthService {
             const userExist = await User.findOne({ email: body.email });
             if (userExist) {
                 return {
+                    status: 409,
                     success: false,
-                    message: 'User already exist'
+                    message: 'User already exist',
                 };
             }
 
@@ -26,19 +28,21 @@ export class AuthService {
                 lastName,
                 email,
                 password: hash,
-                image
+                image,
             });
 
             const newUser = await user.save();
 
             return {
+                status: 201,
                 success: true,
                 message: 'User Successfully created',
-                data: newUser
+                data: newUser,
             };
 
         } catch (err) {
             return {
+                status: 500,
                 success: false,
                 message: err.toString()
             };
@@ -51,16 +55,18 @@ export class AuthService {
             const user = await User.findOne({ email: body.email });
             if (!user) {
                 return {
+                    status: 401,
                     success: false,
-                    message: 'User not found'
+                    message: 'Wrong email or password',
                 };
             }
 
             const matchPasswords = await bcrypt.compare(password, user.password);
             if (!matchPasswords) {
                 return {
+                    status: 401,
                     success: false,
-                    message: 'Not authorized'
+                    message: 'Wrong email or password',
                 };
             }
 
@@ -71,6 +77,7 @@ export class AuthService {
 
 
             return {
+                status: 200,
                 success: true,
                 message: 'Token generated Successfully',
                 data: { "accessToken": accessToken, "tokenExpiresIn": tokenExpiresIn, "user": user }
@@ -78,6 +85,7 @@ export class AuthService {
 
         } catch (err) {
             return {
+                status: 500,
                 success: false,
                 message: err.toString()
             };
@@ -86,25 +94,34 @@ export class AuthService {
 
     async isLoggedIn(body): Promise<any> {
         try {
-            console.log(body.accessToken);
             const user = await User.findOne({ email: body.userModel.email });
             const token: string = body.accessToken;
 
+            // console.log(token.substring(1, token.length-1));
+            console.log("before decode");
+            const decoded = jwtDecode(token);
+            console.log("decode", decoded);
+
             if (!user || !token) {
                 return {
+                    status: 404,
                     success: false,
-                    message: 'User or token are not found'
+                    message: 'User or token are not found',
                 };
             }
 
             return {
+                status: 200,
                 success: true,
+                
                 message: 'User is logged in',
+                user: body.userModel,
             };
         } catch (err) {
             return {
+                status: 500,
                 success: false,
-                message: err.toString()
+                message: err.toString(),
             };
         }
     }

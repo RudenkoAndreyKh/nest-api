@@ -71,16 +71,19 @@ export class UserService {
             );
             if (!userUpdated) {
                 return {
+                    status: 404,
                     success: false,
                     message: 'User not found',
                 };
             }
             return {
+                status: 200,
                 success: true,
                 data: userUpdated
             };
         } catch (err) {
             return {
+                status: 500,
                 success: false,
                 message: err.toString(),
             };
